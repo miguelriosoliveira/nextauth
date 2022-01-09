@@ -20,15 +20,13 @@ interface AuthProviderProps {
 	children: ReactNode;
 }
 
+async function signIn({ email, password }: SignInCredentials) {
+	console.log({ email, password });
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
 	const isAuthenticated = false;
+	const providerValues = useMemo(() => ({ signIn, isAuthenticated }), [isAuthenticated]);
 
-	async function signIn({ email, password }: SignInCredentials) {
-		console.log({ email, password });
-	}
-	// const providerValues = useMemo(() => ({ signIn, isAuthenticated }), [isAuthenticated]);
-
-	return (
-		<AuthContext.Provider value={{ signIn, isAuthenticated }}>{children}</AuthContext.Provider>
-	);
+	return <AuthContext.Provider value={providerValues}>{children}</AuthContext.Provider>;
 }

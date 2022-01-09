@@ -58,7 +58,15 @@
 		"react/react-in-jsx-scope": "off",
 		"react/require-default-props": "off",
 
-		"unicorn/filename-case": ["error", { "cases": ["camelCase", "PascalCase"] }],
+		"unicorn/filename-case": [
+			"error",
+			{
+				"cases": {
+					"camelCase": true,
+					"pascalCase": true
+				}
+			}
+		],
 		"unicorn/no-array-for-each": "off",
 		"unicorn/no-nested-ternary": "off",
 		"unicorn/no-null": "off",

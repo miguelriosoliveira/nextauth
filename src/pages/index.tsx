@@ -1,15 +1,14 @@
+import type { NextPage } from 'next';
+import Head from 'next/head';
+import { ChangeEvent, FormEvent, useState } from 'react';
+
 import { useAuth } from '../hooks';
 
-import styles from '../styles/Home.module.css';
-
-import Head from 'next/head';
-
-import { ChangeEvent, FormEvent, useState } from 'react';
-import type { NextPage } from 'next';
+import styles from './Home.module.css';
 
 const Home: NextPage = () => {
 	const [fields, setFields] = useState({ email: '', password: '' });
-	const { signIn, isAuthenticated } = useAuth();
+	const { signIn } = useAuth();
 
 	function handleChange(event: ChangeEvent<HTMLInputElement>) {
 		const { name, value } = event.target;
