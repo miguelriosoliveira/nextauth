@@ -1,9 +1,10 @@
 import { AxiosError } from 'axios';
 import Router from 'next/router';
-import { setCookie } from 'nookies';
-import { createContext, ReactNode, useMemo, useState } from 'react';
+import { parseCookies, setCookie } from 'nookies';
+import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
+import { COOKIE_KEY_REFRESH_TOKEN, COOKIE_KEY_TOKEN } from '../config/constants';
 import { api } from '../services/api';
 import { isEmptyObject } from '../utils';
 
@@ -52,18 +53,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [user, setUser] = useState<User>({} as User);
 	const isAuthenticated = !isEmptyObject(user);
 
+	useEffect(() => {
+		const { [COOKIE_KEY_TOKEN]: token } = parseCookies();
+		if (token) {
+			api.get<User>('/me').then(({ data: { email, permissions, roles } }) => {
+				setUser({ email, permissions, roles });
+			});
+		}
+	}, []);
+
 	async function signIn({ email, password }: SignInCredentials) {
 		try {
 			const { data } = await api.post<UserSession>('/sessions', { email, password });
 			const { token, refreshToken, permissions, roles } = data;
-			setCookie(null, 'nextauth.token', token, {
+			setCookie(null, COOKIE_KEY_TOKEN, token, {
 				maxAge: 30 * 24 * 60 * 60, // 30 days
 				path: '/',
 			});
-			setCookie(null, 'nextauth.refreshToken', refreshToken, {
+			setCookie(null, COOKIE_KEY_REFRESH_TOKEN, refreshToken, {
 				maxAge: 30 * 24 * 60 * 60, // 30 days
 				path: '/',
 			});
+			api.defaults.headers.common.Authorization = `Bearer ${token}`;
 			setUser({ email, permissions, roles });
 			Router.push('/dashboard');
 		} catch (error) {
