@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
 import Router from 'next/router';
+import { setCookie } from 'nookies';
 import { createContext, ReactNode, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -54,11 +55,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	async function signIn({ email, password }: SignInCredentials) {
 		try {
 			const { data } = await api.post<UserSession>('/sessions', { email, password });
-			setUser({
-				email,
-				permissions: data.permissions,
-				roles: data.roles,
+			const { token, refreshToken, permissions, roles } = data;
+			setCookie(null, 'nextauth.token', token, {
+				maxAge: 30 * 24 * 60 * 60, // 30 days
+				path: '/',
 			});
+			setCookie(null, 'nextauth.refreshToken', refreshToken, {
+				maxAge: 30 * 24 * 60 * 60, // 30 days
+				path: '/',
+			});
+			setUser({ email, permissions, roles });
 			Router.push('/dashboard');
 		} catch (error) {
 			const axiosError = error as AxiosError<AuthenticationResponseError>;
