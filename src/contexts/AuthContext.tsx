@@ -1,12 +1,12 @@
 import { AxiosError } from 'axios';
 import Router from 'next/router';
-import { parseCookies, setCookie } from 'nookies';
+import { parseCookies } from 'nookies';
 import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { COOKIE_KEY_REFRESH_TOKEN, COOKIE_KEY_TOKEN } from '../config/constants';
+import { COOKIE_KEYS } from '../config/constants';
 import { api } from '../services/api';
-import { isEmptyObject } from '../utils';
+import { setCookieRefreshToken, setCookieToken, isEmptyObject } from '../utils';
 
 // ========================================== AuthContext ==========================================
 
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const isAuthenticated = !isEmptyObject(user);
 
 	useEffect(() => {
-		const { [COOKIE_KEY_TOKEN]: token } = parseCookies();
+		const { [COOKIE_KEYS.TOKEN]: token } = parseCookies();
 		if (token) {
 			api.get<User>('/me').then(({ data: { email, permissions, roles } }) => {
 				setUser({ email, permissions, roles });
@@ -66,14 +66,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		try {
 			const { data } = await api.post<UserSession>('/sessions', { email, password });
 			const { token, refreshToken, permissions, roles } = data;
-			setCookie(null, COOKIE_KEY_TOKEN, token, {
-				maxAge: 30 * 24 * 60 * 60, // 30 days
-				path: '/',
-			});
-			setCookie(null, COOKIE_KEY_REFRESH_TOKEN, refreshToken, {
-				maxAge: 30 * 24 * 60 * 60, // 30 days
-				path: '/',
-			});
+			setCookieToken(token);
+			setCookieRefreshToken(refreshToken);
 			api.defaults.headers.common.Authorization = `Bearer ${token}`;
 			setUser({ email, permissions, roles });
 			Router.push('/dashboard');
