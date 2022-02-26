@@ -2,8 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { parseCookies } from 'nookies';
 
 import { COOKIE_KEYS, ERROR_CODES } from '../config/constants';
-import { signOut } from '../contexts';
-import { setCookieRefreshToken, setCookieToken } from '../utils';
+import { setCookieRefreshToken, setCookieToken, signOut } from '../utils';
 
 const cookies = parseCookies();
 

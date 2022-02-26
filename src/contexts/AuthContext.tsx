@@ -1,12 +1,12 @@
 import { AxiosError } from 'axios';
 import Router from 'next/router';
-import { destroyCookie, parseCookies } from 'nookies';
+import { parseCookies } from 'nookies';
 import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
 import { COOKIE_KEYS } from '../config/constants';
 import { api } from '../services/api';
-import { setCookieRefreshToken, setCookieToken, isEmptyObject } from '../utils';
+import { setCookieRefreshToken, setCookieToken, isEmptyObject, signOut } from '../utils';
 
 // ========================================== AuthContext ==========================================
 
@@ -48,12 +48,6 @@ interface UserSession {
 }
 
 const notifyError = (message: string) => toast.error(message, { theme: 'colored' });
-
-export function signOut() {
-	destroyCookie(null, COOKIE_KEYS.TOKEN);
-	destroyCookie(null, COOKIE_KEYS.REFRESH_TOKEN);
-	Router.push('/');
-}
 
 export function AuthProvider({ children }: AuthProviderProps) {
 	const [user, setUser] = useState<User>({} as User);
