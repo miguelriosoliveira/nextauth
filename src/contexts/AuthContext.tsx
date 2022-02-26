@@ -1,6 +1,6 @@
 import { AxiosError } from 'axios';
 import Router from 'next/router';
-import { parseCookies } from 'nookies';
+import { destroyCookie, parseCookies } from 'nookies';
 import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -49,6 +49,12 @@ interface UserSession {
 
 const notifyError = (message: string) => toast.error(message, { theme: 'colored' });
 
+export function signOut() {
+	destroyCookie(null, COOKIE_KEYS.TOKEN);
+	destroyCookie(null, COOKIE_KEYS.REFRESH_TOKEN);
+	Router.push('/');
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
 	const [user, setUser] = useState<User>({} as User);
 	const isAuthenticated = !isEmptyObject(user);
@@ -56,9 +62,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	useEffect(() => {
 		const { [COOKIE_KEYS.TOKEN]: token } = parseCookies();
 		if (token) {
-			api.get<User>('/me').then(({ data: { email, permissions, roles } }) => {
-				setUser({ email, permissions, roles });
-			});
+			api
+				.get<User>('/me')
+				.then(({ data: { email, permissions, roles } }) => {
+					setUser({ email, permissions, roles });
+				})
+				.catch(() => {
+					signOut();
+				});
 		}
 	}, []);
 
