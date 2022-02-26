@@ -20,22 +20,62 @@ interface RefreshTokenResponse {
 	refreshToken: string;
 }
 
+interface FailureRequest {
+	onSuccess: (token: string) => void;
+	onFail: (error: AxiosError) => void;
+}
+
+let isRefreshing = false;
+const failureRequestsQueue: FailureRequest[] = [];
+
 api.interceptors.response.use(
 	response => response,
 	(error: AxiosError<ServerResponseError>) => {
 		if (error.response?.status === 401) {
 			if (error.response?.data.code === ERROR_CODES.TOKEN_EXPIRED) {
 				const { [COOKIE_KEYS.REFRESH_TOKEN]: refreshToken } = parseCookies();
-				api
-					.post<RefreshTokenResponse>('/refresh', { refreshToken })
-					.then(({ data: { token, refreshToken: newRefreshToken } }) => {
-						setCookieToken(token);
-						setCookieRefreshToken(newRefreshToken);
-						api.defaults.headers.common.Authorization = `Bearer ${token}`;
+				const originalRequestConfig = error.config;
+
+				if (!isRefreshing) {
+					isRefreshing = true;
+					api
+						.post<RefreshTokenResponse>('/refresh', { refreshToken })
+						.then(({ data: { token, refreshToken: newRefreshToken } }) => {
+							setCookieToken(token);
+							setCookieRefreshToken(newRefreshToken);
+							api.defaults.headers.common.Authorization = `Bearer ${token}`;
+							failureRequestsQueue.forEach(({ onSuccess }) => onSuccess(token));
+							failureRequestsQueue.length = 0;
+						})
+						.catch(newError => {
+							failureRequestsQueue.forEach(({ onFail }) => onFail(newError));
+							failureRequestsQueue.length = 0;
+						})
+						.finally(() => {
+							isRefreshing = false;
+						});
+				}
+
+				return new Promise((resolve, reject) => {
+					failureRequestsQueue.push({
+						onSuccess(token) {
+							originalRequestConfig.headers = {
+								...originalRequestConfig.headers,
+								Authorization: `Bearer ${token}`,
+							};
+							resolve(api(originalRequestConfig));
+						},
+						onFail(newError) {
+							reject(newError);
+						},
 					});
-			} else {
-				// deslogar usuario
+				});
 			}
+
+			// deslogar usuario
+			return null;
 		}
+
+		return null;
 	},
 );
